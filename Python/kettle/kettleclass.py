@@ -121,7 +121,6 @@ class RedmondKettler:
         return char
 
 
-
     def sendStart(self):
         answ = False
         log.info("Switching on kettle...")
