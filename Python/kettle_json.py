@@ -15,6 +15,11 @@ from kettle.kettleclass import RedmondKettler
 from kettle.logclass import logclass
 from kettle.logclass import log
 import json
+from datetime import datetime
+import timeit
+
+start = timeit.default_timer()
+
 ''' Конфигурация чайника '''
 mac = "cc:6a:a9:e7:13:10"
 key = "b54c75b1b40c88ef"
@@ -65,6 +70,11 @@ if ready:
     data['watts'] = kettler._Watts
     data['alltime'] = kettler._alltime
     data['times'] = kettler._times
+    
+    data['now'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    stop = timeit.default_timer()
+    data['runtime'] = round(stop - start,2) 
 
     json_data = json.dumps(data)
     print (json_data)

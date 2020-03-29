@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#  kettleclass2.py
+#  kettleclass.py
 #  
 #  Copyright 2020  <pi@raspberrypi>
 #  
@@ -37,8 +37,8 @@ CONF_MIN_TEMP = 40
 CONF_MAX_TEMP = 100
 CONF_TARGET_TEMP = 100
 
-CONF_MAX_CONNECT_ATTEMPTS = 3
-CONF_MAX_AUTH_ATTEMPTS = 5
+CONF_MAX_CONNECT_ATTEMPTS = 10
+CONF_MAX_AUTH_ATTEMPTS = 10
 
 '''
 class
