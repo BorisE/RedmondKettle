@@ -30,7 +30,7 @@ key = "b54c75b1b40c88ef"
 kettler = None # global object
 
 #log = logclass()
-log.maxlevel = 5;
+log.maxlevel = 0;
 
 def Setup_Kettler():
     global kettler
