@@ -25,7 +25,15 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 #  
-#  
+#
+'''
+Version history:
+1.08 [2020-04-05]
+ - new method SetWorkingParameters
+ - new wrapper for it kettle_set_mode
+ - code improvements due to further Pyton learning ;)
+'''
+
 import pexpect
 from time import sleep
 import sys
@@ -323,7 +331,7 @@ class RedmondKettler:
             boildurationHex=self.decToHex(self.hexToDec("80")+int(boilduration_correction))
             #log.debug("Boil dur:" + boildurationHex)
             if modest == "01" or  modest == "02":
-                target_temp = min(target_temp, 90) #max allowed 90 in mode 1 & 2
+                target_temp = min(target_temp, 91) #max allowed 90 in mode 1 & 2
             sendline = "0x000e 55" + self.decToHex(self._iter) + "05" + modest + "00" + self.decToHex(target_temp) + "00000000000000000000" + boildurationHex + "0000aa"
             log.debug("Sending command string: [" + sendline+ "]")
             self.child.sendline("char-write-req "+sendline) # set Properties
@@ -331,10 +339,10 @@ class RedmondKettler:
             self.child.expect("\r\n")
             log.debug ( str(self.child.before) + " [should be 55 05 05 >01< aa]")
             answer = self.child.before.split()
-            log.debug("Ok:" + str(answer[3]) )
+            log.debug("Ok:" + str(answer[3] == b"01") )
             self.child.expect(r'\[LE\]>')
             self.iterase()
-            answ = True
+            answ = answer[3] == b"01"
         except Exception as e:
             answ = False
             log.error('Error seting mode')

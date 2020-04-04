@@ -30,7 +30,7 @@ key = "b54c75b1b40c88ef"
 kettler = None # global object
 
 #log = logclass()
-log.maxlevel = 0;
+log.maxlevel = 5;
 
 def Setup_Kettler():
     global kettler
@@ -61,14 +61,14 @@ if __name__ == "__main__":
         mode = str(sys.argv[1])
         mode=mode if len(str(mode))==2 else "0"+str(mode)
     except:
-        mode = "00"
+        mode = "02"
     
     try:
         target_temp = int(sys.argv[2])
         if mode == "01" or  mode == "02":
             target_temp = min(target_temp, 90) #max allowed 90 in mode 1 & 2
     except:
-        target_temp = 0
+        target_temp = 100
 
     try:
         dutation_correction = int(sys.argv[3])
@@ -82,8 +82,11 @@ if ready:
     log.info("Kettle setup was successfully completed, can proceed with commands further")
     #kettler.sendStart()
     
-    log.info ("Setting ketlle paramters: MODE=%s, TARGET_TEMP=%s, DURATION_CORRECTION=%s"%(mode,target_temp,dutation_correction))
-    kettler.sendSetMode(mode, target_temp, dutation_correction)
+    log.info ("Setting kettle parameters: MODE=%s, TARGET_TEMP=%s, DURATION_CORRECTION=%s"%(mode,target_temp,dutation_correction))
+    if kettler.sendSetMode(mode, target_temp, dutation_correction):
+        log.info ("Successfully set")
+    else:
+        log.error ("Error setting kettle parameters")
 
     kettler.sendGetStatus()
     kettler.sendGetStat()
