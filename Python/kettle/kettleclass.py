@@ -2,7 +2,12 @@
 # -*- coding: utf-8 -*-
 #
 #  kettleclass.py
-#  
+#
+# Based on https://m.habr.com/ru/post/371965/abs
+# and https://habr.com/ru/post/412583/
+#
+# Using code from https://github.com/mavrikkk/ha_kettler
+#
 #  Copyright 2020  <pi@raspberrypi>
 #  
 #  This program is free software; you can redistribute it and/or modify
@@ -31,11 +36,16 @@ from textwrap import wrap
 import re
 from datetime import timedelta
 
-from kettle.logclass import log
-
+if __name__ == '__main__':
+    from logclass import log
+else:
+    from kettle.logclass import log
+    
 CONF_MIN_TEMP = 40
 CONF_MAX_TEMP = 100
 CONF_TARGET_TEMP = 100
+
+CONF_KETTLE_POWER = 2200
 
 CONF_MAX_CONNECT_ATTEMPTS = 10
 CONF_MAX_AUTH_ATTEMPTS = 10
@@ -71,11 +81,13 @@ class RedmondKettler:
         self._rgb1 = '0000ff'
         self._rgb2 = 'ff0000'
         self._rand = '5e'
-        self._mode = '00' # '00' - boil, '01' - heat to temp, '03' - backlight
+        self._mode = '00' # '00' - boil, '01' - keep temp,  '02' - boil and keep temp (combo mode), '03' - backlight
         self._status = '00' #may be '00' - OFF or '02' - ON
         self._hold = False
         self.durat = '0'
-
+    
+    # Color functions
+    # - check if they working at all
     def calcMidColor(self, rgb1, rgb2):
         try:
             hs1 = self.rgbhex_to_hs(rgb1)
@@ -96,6 +108,7 @@ class RedmondKettler:
         rgb = color_util.color_hs_to_RGB(*hs)
         return color_util.color_rgb_to_hex(*rgb)
 
+    # Status functions
     def theLightIsOn(self):
         if self._status == '02' and self._mode == '03':
             return True
@@ -103,10 +116,11 @@ class RedmondKettler:
 
     def theKettlerIsOn(self):
         if self._status == '02':
-            if self._mode == '00' or self._mode == '01':
+            if self._mode == '00' or self._mode == '01' or self._mode == '02':
                 return True
         return False
-
+    
+    # Aux functions
     def iterase(self): # counter
         self._iter+=1
         if self._iter >= 100: self._iter = 0
@@ -120,7 +134,10 @@ class RedmondKettler:
             char = '0' + char
         return char
 
-
+    ########################################
+    # Kettle Commands
+    ########################################
+    # Send ON command
     def sendStart(self):
         answ = False
         log.info("Switching on kettle...")
@@ -139,6 +156,7 @@ class RedmondKettler:
             log.debug("Unexpected error info:" +str(sys.exc_info()[0]))
         return answ
 
+    # Send OFF command
     def sendStop(self):
         answ = False
         log.info("Switching off kettle...")
@@ -157,6 +175,7 @@ class RedmondKettler:
             log.debug("Unexpected error info:" +str(sys.exc_info()[0]))
         return answ
     
+    # Send SYNC data (current time data)
     def sendSync(self, timezone = 3):
         answ = False
         log.info("Syncing kettle...")
@@ -183,6 +202,7 @@ class RedmondKettler:
             log.debug("Unexpected error info:" +str(sys.exc_info()[0]))
         return answ
     
+    # Send Use BackLight command
     def sendUseBackLight(self, use = True):
         answ = False
         log.info("Sending Use backlight command...")
@@ -204,6 +224,7 @@ class RedmondKettler:
             log.debug("Unexpected error info:" +str(sys.exc_info()[0]))
         return answ
     
+    # Send Set Color Data command
     def sendSetLightsColor(self, boilOrLight = '00', rgb1 = '0000ff', rgb2 = 'ff0000'): # 00 - boil light    01 - backlight
         answ = False
         log.info("Sending set lights color command...")
@@ -230,6 +251,7 @@ class RedmondKettler:
             log.debug("Unexpected error info:" +str(sys.exc_info()[0]))
         return answ
     
+    # Send Get Usage Statistics command
     def sendGetStat(self):
         answ = False
         log.info("Starting quering statistics...")
@@ -240,7 +262,7 @@ class RedmondKettler:
             statusStr = self.child.before[0:].decode("utf-8")
             log.debug ( statusStr )
             self._Watts = self.hexToDec(str(statusStr.split()[11] + statusStr.split()[10] + statusStr.split()[9])) # in Watts
-            self._alltime = round(self._Watts/2200, 1) # in hours
+            self._alltime = round(self._Watts/CONF_KETTLE_POWER, 1) # in hours
             self.child.expect(r'\[LE\]>')
             self.iterase()
             
@@ -260,7 +282,7 @@ class RedmondKettler:
             
         return answ
     
-    
+    # Send Get Current Status command
     def sendGetStatus(self):
         answ = False
         log.info("Starting getting current status...")
@@ -291,8 +313,39 @@ class RedmondKettler:
            
         return answ
     
-### connect methods
-    
+    # Send Set Working Parameters command
+    def sendSetMode(self, mode, target_temp, boilduration_correction):   # 00 - boil 01 - heat to temp 03 - backlight (boil by default)    temp - in DEC
+        answ = False
+        log.info("Starting set current mode and parameters...")
+        try:
+            modest=mode if len(str(mode))==2 else "0"+str(mode)
+            #log.debug("Mode:" + modest)
+            boildurationHex=self.decToHex(self.hexToDec("80")+int(boilduration_correction))
+            #log.debug("Boil dur:" + boildurationHex)
+            if modest == "01" or  modest == "02":
+                target_temp = min(target_temp, 90) #max allowed 90 in mode 1 & 2
+            sendline = "0x000e 55" + self.decToHex(self._iter) + "05" + modest + "00" + self.decToHex(target_temp) + "00000000000000000000" + boildurationHex + "0000aa"
+            log.debug("Sending command string: [" + sendline+ "]")
+            self.child.sendline("char-write-req "+sendline) # set Properties
+            self.child.expect("value: ")
+            self.child.expect("\r\n")
+            log.debug ( str(self.child.before) + " [should be 55 05 05 >01< aa]")
+            answer = self.child.before.split()
+            log.debug("Ok:" + str(answer[3]) )
+            self.child.expect(r'\[LE\]>')
+            self.iterase()
+            answ = True
+        except Exception as e:
+            answ = False
+            log.error('Error seting mode')
+            log.debug("Unexpected error info:" +str(sys.exc_info()[0])+"|"+str(sys.exc_info()[1]))
+        return answ
+
+
+
+    ########################################
+    # Connect methods
+    ########################################
     def connect(self):
         answer = False
         if self._is_busy:

@@ -3,10 +3,9 @@
 '''
 import pexpect
 from time import sleep
-import sys
+
 import time
 import colorsys
-from datetime import datetime
 from textwrap import wrap
 import re
 from datetime import timedelta
@@ -14,6 +13,7 @@ from datetime import timedelta
 from kettle.kettleclass import RedmondKettler
 from kettle.logclass import logclass
 from kettle.logclass import log
+import sys
 import json
 from datetime import datetime
 import timeit
@@ -30,7 +30,7 @@ key = "b54c75b1b40c88ef"
 kettler = None # global object
 
 #log = logclass()
-log.maxlevel = 0;
+log.maxlevel = 5;
 
 def Setup_Kettler():
     global kettler
@@ -51,12 +51,18 @@ def Setup_Kettler():
     return False
 
 
+if __name__ == "__main__":
+    print(f"Arguments count: {len(sys.argv)}")
+    for i, arg in enumerate(sys.argv):
+        print(f"Argument {i:>6}: {arg}")
+    exit()
+
 ready = Setup_Kettler()
 if ready:
     log.info("Kettle setup was successfully completed, can proceed with commands further")
     #kettler.sendStart()
-    
-    kettler.sendStop()
+
+    kettler.sendSetMode("01",90,1)
 
     kettler.sendGetStatus()
     kettler.sendGetStat()

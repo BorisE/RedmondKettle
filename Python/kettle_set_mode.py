@@ -3,10 +3,9 @@
 '''
 import pexpect
 from time import sleep
-import sys
+
 import time
 import colorsys
-from datetime import datetime
 from textwrap import wrap
 import re
 from datetime import timedelta
@@ -14,6 +13,7 @@ from datetime import timedelta
 from kettle.kettleclass import RedmondKettler
 from kettle.logclass import logclass
 from kettle.logclass import log
+import sys
 import json
 from datetime import datetime
 import timeit
@@ -51,12 +51,39 @@ def Setup_Kettler():
     return False
 
 
+if __name__ == "__main__":
+    log.debug(f"Arguments count: {len(sys.argv)}")
+    for i, arg in enumerate(sys.argv):
+        log.debug(f"Argument {i:>6}: {arg}")
+    
+    # kettle_mode_heat mode target_temp duration_correction
+    try:
+        mode = str(sys.argv[1])
+        mode=mode if len(str(mode))==2 else "0"+str(mode)
+    except:
+        mode = "00"
+    
+    try:
+        target_temp = int(sys.argv[2])
+        if mode == "01" or  mode == "02":
+            target_temp = min(target_temp, 90) #max allowed 90 in mode 1 & 2
+    except:
+        target_temp = 0
+
+    try:
+        dutation_correction = int(sys.argv[3])
+    except:
+        dutation_correction = 0
+       
+   
+
 ready = Setup_Kettler()
 if ready:
     log.info("Kettle setup was successfully completed, can proceed with commands further")
     #kettler.sendStart()
     
-    kettler.sendStop()
+    log.info ("Setting ketlle paramters: MODE=%s, TARGET_TEMP=%s, DURATION_CORRECTION=%s"%(mode,target_temp,dutation_correction))
+    kettler.sendSetMode(mode, target_temp, dutation_correction)
 
     kettler.sendGetStatus()
     kettler.sendGetStat()
