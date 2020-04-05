@@ -27,6 +27,13 @@
 #  
 #
 '''
+ToDo:
+- checking Kettle answer in all methods
+- return kettle answer in json
+- include or smth similar of identical code in kettle_<wrappers>.py
+'''
+
+'''
 Version history:
 1.08 [2020-04-05]
  - new method SetWorkingParameters
