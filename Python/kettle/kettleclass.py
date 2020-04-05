@@ -30,8 +30,9 @@
 Version history:
 1.08 [2020-04-05]
  - new method SetWorkingParameters
- - new wrapper for it kettle_set_mode
+ - new wrapper for it kettle_set_mode.py
  - code improvements due to further Pyton learning ;)
+ - check if kettle return succces in SetWorkingParameters
 '''
 
 import pexpect
